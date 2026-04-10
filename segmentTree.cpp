@@ -1,37 +1,62 @@
-class SGTree{
-  vector<int> seg;
-  public:
-  SGTree(int n){
-    seg.resize(4*n+1);
-  }
-void build(int ind,int low,int high,vector<int>& arr){
-    if(low==high){
-        seg[ind] = arr[low];
-        return;
-    }
-    int mid = (low+high)/2;
-    build(2*ind+1,low,mid,arr);
-    build(2*ind+2,mid+1,high,arr);
-    seg[ind] = min(seg[2*ind+1],seg[2*ind+2]);
-}
+class SGTree {
+    vector<int> seg, lazy;
 
-int query(int ind,int low,int high,int l,int r){
-    //check no overlap
-    if(r<low||l>high) return INT_MAX;
-    //complete overlap
-    if(l<=low&&r>=high) return seg[ind];
-    //partial overlap
-    int mid=(low+high)>>1;
-    return min(query(2*ind+1,low,mid,l,r),query(2*ind+2,mid+1,high,l,r));
-}
-void update(int ind,int low,int high,int i,int val){
-  if(low==high){
-    seg[ind]=val;
-    return;
-  }
-  int mid = (low+high)>>1;
-  if(i<=mid) update(2*ind+1,low,mid,i,val);
-  else update(2*ind+2,mid+1,high,i,val);
-  seg[ind] = min(seg[ind*2+1],seg[2*ind+2]);
-}
+public:
+    SGTree(int n) {
+        seg.resize(4 * n + 1, 0);
+        lazy.resize(4 * n + 1, 0);
+    }
+
+    void build(int ind, int low, int high, vector<int>& arr) {
+        if (low == high) {
+            seg[ind] = arr[low];
+            return;
+        }
+        int mid = (low + high) >> 1;
+        build(2 * ind + 1, low, mid, arr);
+        build(2 * ind + 2, mid + 1, high, arr);
+        seg[ind] = seg[2 * ind + 1] + seg[2 * ind + 2];
+    }
+    void push(int ind, int low, int high) {
+        if (lazy[ind] != 0) {
+            seg[ind] += (high - low + 1) * lazy[ind];
+
+            if (low != high) {
+                lazy[2 * ind + 1] += lazy[ind];
+                lazy[2 * ind + 2] += lazy[ind];
+            }
+
+            lazy[ind] = 0;
+        }
+    }
+
+    int query(int ind, int low, int high, int l, int r) {
+        push(ind, low, high);
+
+        if (r < low || l > high) return 0;
+
+        if (l <= low && high <= r) return seg[ind];
+
+        int mid = (low + high) >> 1;
+        return query(2 * ind + 1, low, mid, l, r) +
+               query(2 * ind + 2, mid + 1, high, l, r);
+    }
+
+    void rupdate(int ind, int low, int high, int l, int r, int val) {
+        push(ind, low, high);
+
+        if (r < low || l > high) return;
+
+        if (l <= low && high <= r) {
+            lazy[ind] += val;
+            push(ind, low, high);
+            return;
+        }
+
+        int mid = (low + high) >> 1;
+        rupdate(2 * ind + 1, low, mid, l, r, val);
+        rupdate(2 * ind + 2, mid + 1, high, l, r, val);
+
+        seg[ind] = seg[2 * ind + 1] + seg[2 * ind + 2];
+    }
 };
